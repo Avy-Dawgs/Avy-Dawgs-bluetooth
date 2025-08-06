@@ -11,17 +11,23 @@ TIMEOUT = 1
 
 disconnect_event = threading.Event()
 
-
 def debug_message(message: str): 
+    '''
+    Print debug message.
+    '''
     if DEBUG: 
         print(message)
 
 def main(args: list[str]): 
+    '''
+    Entry point.
+    '''
 
     name = args[1] 
     uuid = args[2] 
     addr = args[3]
 
+    # only exit in the case of a keyboard interrupt
     while True:
         try:
             run_client(name, uuid, addr)
@@ -31,10 +37,14 @@ def main(args: list[str]):
             debug_message(str(e))
 
 def run_client(name: str, uuid: str, addr: str): 
+    '''
+    Run the client.
+    '''
     print(DISCONNECTED_MESSAGE, flush=True)
 
     debug_message("Starting client.")
 
+    # search for connection, try again if disconnected
     while True:
         service_matches = bluetooth.find_service(name=name, uuid=uuid, address=addr) 
 
@@ -76,6 +86,9 @@ def run_client(name: str, uuid: str, addr: str):
         debug_message("Connection closed.")
 
 def send_loop(sock: bluetooth.BluetoothSocket): 
+    '''
+    Send loop.
+    '''
     while True:
         if disconnect_event.is_set(): 
             break
@@ -91,6 +104,9 @@ def send_loop(sock: bluetooth.BluetoothSocket):
             break
 
 def receive_loop(sock: bluetooth.BluetoothSocket): 
+    '''
+    Receive loop.
+    '''
     while True: 
         if disconnect_event.is_set(): 
             break

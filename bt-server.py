@@ -13,14 +13,21 @@ TIMEOUT = 1
 disconnect_event = threading.Event()
 
 def debug_message(message: str): 
+    '''
+    Print debug message.
+    '''
     if DEBUG: 
         print(message)
 
 def main(args: list[str]): 
+    '''
+    Entry point.
+    '''
 
     name = args[1] 
     uuid = args[2]
 
+    # attempt to run again in the case of a crash, except for Keyboard Interrupt
     while True: 
         try: 
             run_server(name, uuid) 
@@ -30,8 +37,12 @@ def main(args: list[str]):
             debug_message(str(e))
 
 def run_server(name: str, uuid: str): 
+    '''
+    Run the server.
+    '''
     print(DISCONNECTED_MESSAGE, flush=True)
 
+    # make device discoverable
     subprocess.run(["bluetoothctl", "discoverable", "on"])
         
     debug_message("Starting server.")
@@ -39,6 +50,7 @@ def run_server(name: str, uuid: str):
     listen_and_advertise(listener_sock, name, uuid)
     debug_message("Listening.")
 
+    # connect and start send/receive threads, retry if connection lost
     while True:
         try:
             debug_message("Waiting for client.")
@@ -71,19 +83,31 @@ def run_server(name: str, uuid: str):
     listener_sock.close()
 
 def create_socket() -> bluetooth.BluetoothSocket: 
+    '''
+    Create the socket.
+    '''
     server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
     server_sock.bind(("", bluetooth.PORT_ANY)) 
     return server_sock
 
 def listen_and_advertise(server_sock: bluetooth.BluetoothSocket, name: str, uuid: str): 
+    '''
+    Start listening, and advertise the server.
+    '''
     server_sock.listen(1)
     bluetooth.advertise_service(server_sock, name, service_id=uuid, service_classes=[uuid, bluetooth.SERIAL_PORT_CLASS], profiles=[bluetooth.SERIAL_PORT_PROFILE])
 
 def wait_for_connection(server_sock: bluetooth.BluetoothSocket): 
+    '''
+    Wait for a connection.
+    '''
     client_sock, client_info = server_sock.accept() 
     return client_sock, client_info
 
 def send_loop(client_sock: bluetooth.BluetoothSocket): 
+    '''
+    Continuous send loop.
+    '''
     while True: 
         if disconnect_event.is_set(): 
             break
@@ -99,6 +123,9 @@ def send_loop(client_sock: bluetooth.BluetoothSocket):
             break
 
 def receive_loop(client_sock: bluetooth.BluetoothSocket): 
+    '''
+    Continuous receive loop.
+    '''
     while True: 
         if disconnect_event.is_set(): 
             break
